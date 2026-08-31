@@ -226,27 +226,59 @@
     outline-offset: 2px;
   }
 
-  .bar-track {
-    height: 8px;
-    border-radius: 999px;
-    background: var(--surface-2);
-    overflow: hidden;
-    position: relative;
-  }
-
-  .bar-fill {
-    height: 100%;
-    border-radius: 999px;
-    background: linear-gradient(90deg, var(--brand), var(--accent));
-  }
-
-  .bar-labels {
+  .date-block {
     display: flex;
-    justify-content: space-between;
-    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    flex-direction: column;
+    gap: 10px;
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    padding: 16px 0;
+  }
+
+  .date-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .date-row .label {
     font-size: 12px;
     color: var(--ink-faint);
+    width: 84px;
+    flex-shrink: 0;
+  }
+
+  .date-row input[type="date"] {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 13.5px;
+    color: var(--ink);
+    background: var(--surface-2);
+    border: 1px solid var(--line-strong);
+    border-radius: 8px;
+    padding: 7px 10px;
     font-variant-numeric: tabular-nums;
+  }
+
+  .date-row input[type="date"]:focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 1px;
+  }
+
+  .due-out {
+    font-size: 13.5px;
+    color: var(--ink-soft);
+  }
+
+  .due-out strong {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  .due-out.empty {
+    color: var(--ink-faint);
+    font-style: normal;
   }
 
   .status-note {
@@ -467,9 +499,12 @@
 
   <div class="status">
     <div class="status-rows" id="statusRows"></div>
-    <div>
-      <div class="bar-track"><div class="bar-fill" id="barFill" style="width:0%"></div></div>
-      <div class="bar-labels" id="barLabels"><span></span><span></span></div>
+    <div class="date-block">
+      <div class="date-row">
+        <span class="label">วันที่เช็คล่าสุด</span>
+        <input type="date" id="lastDoneDateInput">
+      </div>
+      <div class="due-out" id="dueOut"></div>
     </div>
     <div class="status-note" id="statusNote"></div>
   </div>
@@ -517,6 +552,7 @@
   ];
 
   var STORE_KEY = "nevoQ05_lastDoneKm";
+  var DATE_KEY = "nevoQ05_lastDoneDate";
 
   function fmt(n) { return n.toLocaleString("th-TH"); }
 
@@ -533,6 +569,33 @@
 
   function clearLastDoneKm() {
     try { localStorage.removeItem(STORE_KEY); } catch (e) {}
+    try { localStorage.removeItem(DATE_KEY); } catch (e) {}
+  }
+
+  function getLastDoneDate() {
+    try { return localStorage.getItem(DATE_KEY) || ""; } catch (e) { return ""; }
+  }
+
+  function setLastDoneDate(isoDate) {
+    try { localStorage.setItem(DATE_KEY, isoDate); } catch (e) {}
+  }
+
+  function todayISO() {
+    var d = new Date();
+    var m = String(d.getMonth() + 1).padStart(2, "0");
+    var day = String(d.getDate()).padStart(2, "0");
+    return d.getFullYear() + "-" + m + "-" + day;
+  }
+
+  function addMonthsISO(isoDate, months) {
+    var parts = isoDate.split("-").map(Number);
+    var d = new Date(parts[0], parts[1] - 1, parts[2]);
+    d.setMonth(d.getMonth() + months);
+    return d;
+  }
+
+  function formatThaiDate(d) {
+    return d.toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "numeric" });
   }
 
   function render() {
@@ -562,13 +625,20 @@
     r2.innerHTML = '<span class="label">รอบถัดไป</span><button type="button" class="badge-next" data-km="' + nextStep.km + '">' + fmt(nextStep.km) + ' กม. / ' + nextStep.mo + ' เดือน</button>';
     statusRows.appendChild(r2);
 
-    // progress bar: toward next step, from previous step (or 0)
-    var prevKm = doneIndex >= 0 ? SCHEDULE[doneIndex].km : 0;
-    var span = nextStep.km - prevKm;
-    var pct = lastDoneKm !== null && doneIndex === nextIndex - 1 ? 0 : 0;
-    document.getElementById("barFill").style.width = "0%";
-    var barLabels = document.getElementById("barLabels");
-    barLabels.innerHTML = "<span>" + fmt(prevKm) + "</span><span>เป้าหมายถัดไป " + fmt(nextStep.km) + " กม.</span>";
+    // date of last check + computed next-due date (schedule steps 12 months apart)
+    var lastDoneDate = getLastDoneDate();
+    var dateInput = document.getElementById("lastDoneDateInput");
+    dateInput.value = lastDoneDate;
+
+    var dueOut = document.getElementById("dueOut");
+    if (lastDoneDate) {
+      var dueDate = addMonthsISO(lastDoneDate, 12);
+      dueOut.className = "due-out";
+      dueOut.innerHTML = "กำหนดเข้าเช็คครั้งถัดไป: <strong>" + formatThaiDate(dueDate) + "</strong>";
+    } else {
+      dueOut.className = "due-out empty";
+      dueOut.textContent = "กรอกวันที่เช็คล่าสุด เพื่อคำนวณวันที่ต้องเข้าเช็คครั้งถัดไป";
+    }
 
     // status note
     var noteTags = nextStep.parts.map(function(p){ return p.name; }).join(" + ") + " + ตรวจสอบความปลอดภัยตามคู่มือ";
@@ -609,6 +679,7 @@
 
   function markDone(km) {
     setLastDoneKm(km);
+    if (!getLastDoneDate()) setLastDoneDate(todayISO());
     render();
   }
 
@@ -616,6 +687,13 @@
     var btn = e.target.closest(".badge-next");
     if (btn) { markDone(parseInt(btn.dataset.km, 10)); return; }
     if (e.target.id === "resetBtn") { clearLastDoneKm(); render(); }
+  });
+
+  document.addEventListener("change", function (e) {
+    if (e.target.id === "lastDoneDateInput") {
+      setLastDoneDate(e.target.value);
+      render();
+    }
   });
 
   render();
