@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>กำหนดบำรุงรักษา NEVO Q05</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f4f5f8;
+    --surface: #ffffff;
+    --surface-2: #eceff4;
+    --ink: #151b2e;
+    --ink-soft: #566078;
+    --ink-faint: #8993a8;
+    --line: #dde2ea;
+    --line-strong: #c5cbd8;
+    --brand: #1d4ed8;
+    --brand-soft: #e8edfc;
+    --accent: #c2650a;
+    --accent-soft: #fbead4;
+    --accent-line: #eab676;
+    --good: #157347;
+    --good-soft: #e3f3ea;
+    --shadow: 0 1px 2px rgba(21,27,46,0.04), 0 8px 24px -12px rgba(21,27,46,0.12);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0e1220;
+      --surface: #161c2e;
+      --surface-2: #1d2438;
+      --ink: #e9ecf6;
+      --ink-soft: #a5adc4;
+      --ink-faint: #707a95;
+      --line: #2a3149;
+      --line-strong: #3a4262;
+      --brand: #7ba0ff;
+      --brand-soft: #1c2947;
+      --accent: #f0a445;
+      --accent-soft: #2e2312;
+      --accent-line: #5a4322;
+      --good: #4fd196;
+      --good-soft: #14291f;
+      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px -12px rgba(0,0,0,0.5);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --bg: #0e1220;
+    --surface: #161c2e;
+    --surface-2: #1d2438;
+    --ink: #e9ecf6;
+    --ink-soft: #a5adc4;
+    --ink-faint: #707a95;
+    --line: #2a3149;
+    --line-strong: #3a4262;
+    --brand: #7ba0ff;
+    --brand-soft: #1c2947;
+    --accent: #f0a445;
+    --accent-soft: #2e2312;
+    --accent-line: #5a4322;
+    --good: #4fd196;
+    --good-soft: #14291f;
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px -12px rgba(0,0,0,0.5);
+  }
+
+  * { box-sizing: border-box; }
+
+  html { color-scheme: light dark; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "IBM Plex Sans Thai", "Noto Sans Thai", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    padding: clamp(20px, 4vw, 56px);
+  }
+
+  .page {
+    max-width: 920px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+  }
+
+  /* ---------- Header ---------- */
+  .head {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .eyebrow {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--brand);
+    font-weight: 600;
+  }
+
+  h1 {
+    margin: 0;
+    font-size: clamp(24px, 3.4vw, 32px);
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+  }
+
+  .sub {
+    margin: 0;
+    color: var(--ink-soft);
+    font-size: 14.5px;
+  }
+
+  /* ---------- Status card ---------- */
+  .status {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 22px 24px;
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .status-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .odo {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+  }
+
+  .odo-value {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 30px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .odo-unit {
+    color: var(--ink-faint);
+    font-size: 14px;
+  }
+
+  .badge-next {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    background: var(--accent-soft);
+    border: 1px solid var(--accent-line);
+    color: var(--accent);
+    font-size: 13px;
+    font-weight: 600;
+    padding: 6px 12px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+
+  .badge-next::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+
+  .badge-done {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    background: var(--good-soft);
+    border: 1px solid transparent;
+    color: var(--good);
+    font-size: 13px;
+    font-weight: 600;
+    padding: 6px 12px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+
+  .status-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .status-row {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .status-row .label {
+    font-size: 12px;
+    color: var(--ink-faint);
+    width: 84px;
+    flex-shrink: 0;
+  }
+
+  .status-row button.badge-next {
+    cursor: pointer;
+    font-family: inherit;
+  }
+
+  .status-row button.badge-next:hover {
+    filter: brightness(0.96);
+  }
+
+  .status-row button.badge-next:focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
+  }
+
+  .bar-track {
+    height: 8px;
+    border-radius: 999px;
+    background: var(--surface-2);
+    overflow: hidden;
+    position: relative;
+  }
+
+  .bar-fill {
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--brand), var(--accent));
+  }
+
+  .bar-labels {
+    display: flex;
+    justify-content: space-between;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 12px;
+    color: var(--ink-faint);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .status-note {
+    font-size: 13.5px;
+    color: var(--ink-soft);
+    border-top: 1px solid var(--line);
+    padding-top: 14px;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .status-note strong {
+    color: var(--ink);
+    font-weight: 600;
+  }
+
+  .status-note .cost {
+    margin-left: auto;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-weight: 600;
+    color: var(--accent);
+    white-space: nowrap;
+  }
+
+  /* ---------- Table ---------- */
+  .table-wrap {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+
+  .scroll {
+    overflow-x: auto;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 640px;
+  }
+
+  thead th {
+    text-align: left;
+    font-size: 11.5px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    font-weight: 600;
+    padding: 14px 16px;
+    background: var(--surface-2);
+    border-bottom: 1px solid var(--line-strong);
+    white-space: nowrap;
+  }
+
+  thead th.num, td.num {
+    text-align: right;
+  }
+
+  tbody tr {
+    border-bottom: 1px solid var(--line);
+    cursor: pointer;
+  }
+
+  tbody tr:last-child {
+    border-bottom: none;
+  }
+
+  tbody tr:hover {
+    background: var(--surface-2);
+  }
+
+  tbody tr.current {
+    background: var(--accent-soft);
+  }
+
+  tbody tr.current:hover {
+    background: var(--accent-soft);
+  }
+
+  tbody tr.current td:first-child {
+    box-shadow: inset 3px 0 0 var(--accent);
+  }
+
+  td {
+    padding: 13px 16px;
+    font-size: 14px;
+    vertical-align: top;
+  }
+
+  .interval {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    white-space: nowrap;
+  }
+
+  .interval .km {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    font-size: 14px;
+  }
+
+  .interval .mo {
+    font-size: 12px;
+    color: var(--ink-faint);
+  }
+
+  .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12.5px;
+    padding: 4px 9px;
+    border-radius: 7px;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    color: var(--ink-soft);
+    white-space: nowrap;
+  }
+
+  .tag.filter { color: var(--brand); background: var(--brand-soft); border-color: transparent; }
+
+  .row-done { opacity: 0.55; }
+
+  .tag.done { color: var(--good); background: var(--good-soft); border-color: transparent; font-weight: 600; }
+
+  td.num {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  td.total {
+    font-weight: 700;
+    color: var(--ink);
+  }
+
+  tr.current td.total {
+    color: var(--accent);
+  }
+
+  /* ---------- Foot notes ---------- */
+  .foot {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 4px 4px 0;
+  }
+
+  .foot-line {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    font-size: 13px;
+    color: var(--ink-soft);
+  }
+
+  .foot-line .dot {
+    color: var(--ink-faint);
+    flex-shrink: 0;
+  }
+
+  .foot-line.hint {
+    color: var(--ink-faint);
+    font-style: normal;
+  }
+
+  .always {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--good);
+    background: var(--good-soft);
+    border: 1px solid transparent;
+    padding: 10px 14px;
+    border-radius: 10px;
+    width: fit-content;
+  }
+
+  .reset-link {
+    background: none;
+    border: none;
+    padding: 0;
+    font: inherit;
+    color: var(--ink-faint);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    cursor: pointer;
+  }
+
+  .reset-link:hover { color: var(--ink-soft); }
+
+  @media (max-width: 560px) {
+    .status-note .cost { margin-left: 0; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <div class="head">
+    <span class="eyebrow">Changan · NEVO Q05 Ultra</span>
+    <h1>ตารางบำรุงรักษาตามระยะทาง</h1>
+    <p class="sub">อ้างอิงจากตารางบำรุงรักษาอย่างเป็นทางการ — ราคา ณ วันที่ 19 สิงหาคม 2569 (รวม VAT 7%)</p>
+  </div>
+
+  <div class="status">
+    <div class="status-rows" id="statusRows"></div>
+    <div>
+      <div class="bar-track"><div class="bar-fill" id="barFill" style="width:0%"></div></div>
+      <div class="bar-labels" id="barLabels"><span></span><span></span></div>
+    </div>
+    <div class="status-note" id="statusNote"></div>
+  </div>
+
+  <div class="table-wrap">
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>รอบ</th>
+            <th>รายการที่ต้องเปลี่ยน</th>
+            <th class="num">ค่าแรง</th>
+            <th class="num">ค่าอะไหล่</th>
+            <th class="num">รวม (บาท)</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="foot">
+    <span class="always">✓ ทุกรอบรวมการตรวจสอบความปลอดภัยตามคู่มือประจำรถแล้ว (ไม่มีค่าใช้จ่ายเพิ่ม)</span>
+    <div class="foot-line"><span class="dot">·</span><span>ค่าแรงคิดที่ 600 บาท/ชั่วโมง — ราคารวม VAT 7% แล้ว</span></div>
+    <div class="foot-line"><span class="dot">·</span><span>ระยะเปลี่ยนอะไหล่อ้างอิงตามระยะทางจริง การใช้งานหนัก/สภาพขับขี่อาจทำให้ต้องเปลี่ยนเร็วกว่ากำหนด</span></div>
+    <div class="foot-line"><span class="dot">·</span><span>บริษัทฯ ขอสงวนสิทธิ์ปรับราคาโดยไม่ต้องแจ้งล่วงหน้า</span></div>
+    <div class="foot-line hint">·&nbsp;<span>แตะที่แถวไหนก็ได้เพื่อบันทึกว่าเช็คแล้วถึงรอบนั้น — บันทึกไว้ในเบราว์เซอร์นี้เท่านั้น <button class="reset-link" id="resetBtn" type="button">ล้างค่า</button></span></div>
+  </div>
+
+</div>
+
+<script>
+  var SCHEDULE = [
+    { km: 5000,   mo: 6,   parts: [{name:"แผ่นกรองแอร์", cost:398, filter:true}], labor:"0.6 ชม.", partCost:398,  total:758  },
+    { km: 15000,  mo: 18,  parts: [{name:"แผ่นกรองแอร์", cost:398, filter:true}], labor:"0.6 ชม.", partCost:398,  total:758  },
+    { km: 25000,  mo: 30,  parts: [{name:"แผ่นกรองแอร์", cost:398, filter:true}], labor:"0.6 ชม.", partCost:398,  total:758  },
+    { km: 35000,  mo: 42,  parts: [{name:"แผ่นกรองแอร์", cost:398, filter:true}], labor:"0.6 ชม.", partCost:398,  total:758  },
+    { km: 45000,  mo: 54,  parts: [{name:"แผ่นกรองแอร์", cost:398, filter:true},{name:"น้ำมันเบรค", cost:460}], labor:"1.7 ชม.", partCost:858,  total:1878 },
+    { km: 55000,  mo: 66,  parts: [{name:"แผ่นกรองแอร์", cost:398, filter:true},{name:"น้ำมันหล่อลื่นมอเตอร์", cost:2380}], labor:"1.6 ชม.", partCost:2778, total:3738 },
+    { km: 65000,  mo: 78,  parts: [{name:"แผ่นกรองแอร์", cost:398, filter:true},{name:"น้ำยาหล่อเย็น", cost:1396}], labor:"1.2 ชม.", partCost:1794, total:2514 },
+    { km: 75000,  mo: 90,  parts: [{name:"แผ่นกรองแอร์", cost:398, filter:true}], labor:"0.6 ชม.", partCost:398,  total:758  },
+    { km: 85000,  mo: 102, parts: [{name:"แผ่นกรองแอร์", cost:398, filter:true},{name:"น้ำมันเบรค", cost:460}], labor:"1.7 ชม.", partCost:858,  total:1878 },
+    { km: 95000,  mo: 114, parts: [{name:"แผ่นกรองแอร์", cost:398, filter:true}], labor:"0.6 ชม.", partCost:398,  total:758  },
+    { km: 105000, mo: 126, parts: [{name:"แผ่นกรองแอร์", cost:398, filter:true}], labor:"0.6 ชม.", partCost:398,  total:758  }
+  ];
+
+  var STORE_KEY = "nevoQ05_lastDoneKm";
+
+  function fmt(n) { return n.toLocaleString("th-TH"); }
+
+  function getLastDoneKm() {
+    try {
+      var v = localStorage.getItem(STORE_KEY);
+      return v ? parseInt(v, 10) : null;
+    } catch (e) { return null; }
+  }
+
+  function setLastDoneKm(km) {
+    try { localStorage.setItem(STORE_KEY, String(km)); } catch (e) {}
+  }
+
+  function clearLastDoneKm() {
+    try { localStorage.removeItem(STORE_KEY); } catch (e) {}
+  }
+
+  function render() {
+    var lastDoneKm = getLastDoneKm();
+    var doneIndex = -1;
+    if (lastDoneKm !== null) {
+      for (var i = 0; i < SCHEDULE.length; i++) {
+        if (SCHEDULE[i].km <= lastDoneKm) doneIndex = i;
+      }
+    }
+    var nextIndex = doneIndex + 1;
+    if (nextIndex >= SCHEDULE.length) nextIndex = SCHEDULE.length - 1;
+
+    // status rows
+    var statusRows = document.getElementById("statusRows");
+    statusRows.innerHTML = "";
+    if (doneIndex >= 0) {
+      var doneStep = SCHEDULE[doneIndex];
+      var r1 = document.createElement("div");
+      r1.className = "status-row";
+      r1.innerHTML = '<span class="label">รอบล่าสุด</span><span class="badge-done">✓ ' + fmt(doneStep.km) + ' กม. / ' + doneStep.mo + ' เดือน — เช็คแล้ว</span>';
+      statusRows.appendChild(r1);
+    }
+    var nextStep = SCHEDULE[nextIndex];
+    var r2 = document.createElement("div");
+    r2.className = "status-row";
+    r2.innerHTML = '<span class="label">รอบถัดไป</span><button type="button" class="badge-next" data-km="' + nextStep.km + '">' + fmt(nextStep.km) + ' กม. / ' + nextStep.mo + ' เดือน</button>';
+    statusRows.appendChild(r2);
+
+    // progress bar: toward next step, from previous step (or 0)
+    var prevKm = doneIndex >= 0 ? SCHEDULE[doneIndex].km : 0;
+    var span = nextStep.km - prevKm;
+    var pct = lastDoneKm !== null && doneIndex === nextIndex - 1 ? 0 : 0;
+    document.getElementById("barFill").style.width = "0%";
+    var barLabels = document.getElementById("barLabels");
+    barLabels.innerHTML = "<span>" + fmt(prevKm) + "</span><span>เป้าหมายถัดไป " + fmt(nextStep.km) + " กม.</span>";
+
+    // status note
+    var noteTags = nextStep.parts.map(function(p){ return p.name; }).join(" + ") + " + ตรวจสอบความปลอดภัยตามคู่มือ";
+    document.getElementById("statusNote").innerHTML =
+      '<span><strong>เช็คถัดไป:</strong> ' + noteTags + '</span><span class="cost">รวม ' + fmt(nextStep.total) + ' บาท</span>';
+
+    // table
+    var tbody = document.getElementById("tbody");
+    tbody.innerHTML = "";
+    SCHEDULE.forEach(function(step, i) {
+      var tr = document.createElement("tr");
+      var classes = [];
+      if (i <= doneIndex) classes.push("row-done");
+      if (i === nextIndex) classes.push("current");
+      tr.className = classes.join(" ");
+      tr.dataset.km = step.km;
+
+      var tagsHtml;
+      if (i <= doneIndex) {
+        tagsHtml = '<span class="tag done">✓ เช็คแล้ว</span>';
+      } else {
+        tagsHtml = step.parts.map(function(p) {
+          return '<span class="tag' + (p.filter ? ' filter' : '') + '">' + p.name + ' · ' + fmt(p.cost) + '</span>';
+        }).join("");
+      }
+
+      tr.innerHTML =
+        '<td><div class="interval"><span class="km">' + fmt(step.km) + '</span><span class="mo">' + step.mo + ' เดือน</span></div></td>' +
+        '<td><div class="tags">' + tagsHtml + '</div></td>' +
+        '<td class="num">' + step.labor + '</td>' +
+        '<td class="num">' + fmt(step.partCost) + '</td>' +
+        '<td class="num total">' + fmt(step.total) + '</td>';
+
+      tr.addEventListener("click", function () { markDone(step.km); });
+      tbody.appendChild(tr);
+    });
+  }
+
+  function markDone(km) {
+    setLastDoneKm(km);
+    render();
+  }
+
+  document.addEventListener("click", function (e) {
+    var btn = e.target.closest(".badge-next");
+    if (btn) { markDone(parseInt(btn.dataset.km, 10)); return; }
+    if (e.target.id === "resetBtn") { clearLastDoneKm(); render(); }
+  });
+
+  render();
+</script>
+
+</body>
+</html>
