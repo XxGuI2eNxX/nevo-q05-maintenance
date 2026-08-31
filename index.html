@@ -501,7 +501,7 @@
     <div class="status-rows" id="statusRows"></div>
     <div class="date-block">
       <div class="date-row">
-        <span class="label">วันที่เช็คล่าสุด</span>
+        <span class="label">วันที่เข้าเช็ค</span>
         <input type="date" id="lastDoneDateInput">
       </div>
       <div class="due-out" id="dueOut"></div>
@@ -531,7 +531,7 @@
     <div class="foot-line"><span class="dot">·</span><span>ค่าแรงคิดที่ 600 บาท/ชั่วโมง — ราคารวม VAT 7% แล้ว</span></div>
     <div class="foot-line"><span class="dot">·</span><span>ระยะเปลี่ยนอะไหล่อ้างอิงตามระยะทางจริง การใช้งานหนัก/สภาพขับขี่อาจทำให้ต้องเปลี่ยนเร็วกว่ากำหนด</span></div>
     <div class="foot-line"><span class="dot">·</span><span>บริษัทฯ ขอสงวนสิทธิ์ปรับราคาโดยไม่ต้องแจ้งล่วงหน้า</span></div>
-    <div class="foot-line hint">·&nbsp;<span>แตะที่แถวไหนก็ได้เพื่อบันทึกว่าเช็คแล้วถึงรอบนั้น — บันทึกไว้ในเบราว์เซอร์นี้เท่านั้น <button class="reset-link" id="resetBtn" type="button">ล้างค่า</button></span></div>
+    <div class="foot-line hint">·&nbsp;<span>กรอกวันที่เข้าเช็คด้านบน หรือแตะที่แถวไหนก็ได้ เพื่อบันทึกว่าเช็คแล้วถึงรอบนั้น — บันทึกไว้ในเบราว์เซอร์นี้เท่านั้น <button class="reset-link" id="resetBtn" type="button">ล้างค่า</button></span></div>
   </div>
 
 </div>
@@ -587,9 +587,13 @@
     return d.getFullYear() + "-" + m + "-" + day;
   }
 
-  function addMonthsISO(isoDate, months) {
+  function parseISODate(isoDate) {
     var parts = isoDate.split("-").map(Number);
-    var d = new Date(parts[0], parts[1] - 1, parts[2]);
+    return new Date(parts[0], parts[1] - 1, parts[2]);
+  }
+
+  function addMonthsISO(isoDate, months) {
+    var d = parseISODate(isoDate);
     d.setMonth(d.getMonth() + months);
     return d;
   }
@@ -609,14 +613,18 @@
     var nextIndex = doneIndex + 1;
     if (nextIndex >= SCHEDULE.length) nextIndex = SCHEDULE.length - 1;
 
+    // date recorded for the most recently completed round (markDone always stamps it)
+    var lastDoneDate = getLastDoneDate();
+
     // status rows
     var statusRows = document.getElementById("statusRows");
     statusRows.innerHTML = "";
     if (doneIndex >= 0) {
       var doneStep = SCHEDULE[doneIndex];
+      var doneDateText = lastDoneDate ? " (" + formatThaiDate(parseISODate(lastDoneDate)) + ")" : "";
       var r1 = document.createElement("div");
       r1.className = "status-row";
-      r1.innerHTML = '<span class="label">รอบล่าสุด</span><span class="badge-done">✓ ' + fmt(doneStep.km) + ' กม. / ' + doneStep.mo + ' เดือน — เช็คแล้ว</span>';
+      r1.innerHTML = '<span class="label">รอบล่าสุด</span><span class="badge-done">✓ ' + fmt(doneStep.km) + ' กม. / ' + doneStep.mo + ' เดือน — เช็คแล้ว' + doneDateText + '</span>';
       statusRows.appendChild(r1);
     }
     var nextStep = SCHEDULE[nextIndex];
@@ -625,10 +633,11 @@
     r2.innerHTML = '<span class="label">รอบถัดไป</span><button type="button" class="badge-next" data-km="' + nextStep.km + '">' + fmt(nextStep.km) + ' กม. / ' + nextStep.mo + ' เดือน</button>';
     statusRows.appendChild(r2);
 
-    // date of last check + computed next-due date (schedule steps 12 months apart)
-    var lastDoneDate = getLastDoneDate();
+    // the date field always records the check-in date for the CURRENT pending round (nextStep);
+    // entering a date marks that round done and computes the next-due date from it
     var dateInput = document.getElementById("lastDoneDateInput");
-    dateInput.value = lastDoneDate;
+    dateInput.value = "";
+    dateInput.dataset.forKm = nextStep.km;
 
     var dueOut = document.getElementById("dueOut");
     if (lastDoneDate) {
@@ -637,7 +646,7 @@
       dueOut.innerHTML = "กำหนดเข้าเช็คครั้งถัดไป: <strong>" + formatThaiDate(dueDate) + "</strong>";
     } else {
       dueOut.className = "due-out empty";
-      dueOut.textContent = "กรอกวันที่เช็คล่าสุด เพื่อคำนวณวันที่ต้องเข้าเช็คครั้งถัดไป";
+      dueOut.textContent = "กรอกวันที่เข้าเช็ครอบนี้ เพื่อบันทึกว่าเช็คแล้ว และคำนวณวันครบกำหนดรอบถัดไป";
     }
 
     // status note
@@ -677,9 +686,9 @@
     });
   }
 
-  function markDone(km) {
+  function markDone(km, isoDate) {
     setLastDoneKm(km);
-    if (!getLastDoneDate()) setLastDoneDate(todayISO());
+    setLastDoneDate(isoDate || todayISO());
     render();
   }
 
@@ -690,9 +699,9 @@
   });
 
   document.addEventListener("change", function (e) {
-    if (e.target.id === "lastDoneDateInput") {
-      setLastDoneDate(e.target.value);
-      render();
+    if (e.target.id === "lastDoneDateInput" && e.target.value) {
+      var km = parseInt(e.target.dataset.forKm, 10);
+      markDone(km, e.target.value);
     }
   });
 
