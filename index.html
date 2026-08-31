@@ -515,17 +515,18 @@
   <div class="head">
     <span class="eyebrow">Changan · NEVO Q05 Ultra</span>
     <h1>ตารางบำรุงรักษาตามระยะทาง</h1>
-    <p class="sub">อ้างอิงจากตารางบำรุงรักษาอย่างเป็นทางการ — ราคา ณ วันที่ 19 สิงหาคม 2569 (รวม VAT 7%)</p>
+    <p class="sub">อ้างอิงจากตารางบำรุงรักษาอย่างเป็นทางการ — ราคา ณ วันที่ 19 สิงหาคม 2026 (รวม VAT 7%)</p>
   </div>
 
   <div class="status">
     <div class="status-rows" id="statusRows"></div>
     <div class="date-block">
       <div class="date-row">
-        <span class="label">วันที่เข้าเช็ค</span>
+        <span class="label" id="dateFieldLabel">วันที่เข้าเช็ค</span>
         <input type="date" id="lastDoneDateInput">
         <button type="button" class="save-btn" id="saveDateBtn">บันทึก</button>
       </div>
+      <div class="due-out" id="forRoundHint"></div>
       <div class="due-out" id="dueOut"></div>
     </div>
     <div class="status-note" id="statusNote"></div>
@@ -621,7 +622,8 @@
   }
 
   function formatThaiDate(d) {
-    return d.toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "numeric" });
+    // Thai month names, but Gregorian (ค.ศ.) year — not Buddhist Era
+    return d.toLocaleDateString("th-TH-u-ca-gregory", { day: "numeric", month: "short", year: "numeric" });
   }
 
   function render() {
@@ -660,6 +662,9 @@
     var dateInput = document.getElementById("lastDoneDateInput");
     dateInput.value = "";
     dateInput.dataset.forKm = nextStep.km;
+
+    document.getElementById("forRoundHint").textContent =
+      "จะบันทึกให้รอบ " + fmt(nextStep.km) + " กม. / " + nextStep.mo + " เดือน (รอบที่กำลังรออยู่)";
 
     var dueOut = document.getElementById("dueOut");
     if (lastDoneDate) {
