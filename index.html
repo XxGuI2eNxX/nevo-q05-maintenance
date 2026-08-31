@@ -265,6 +265,31 @@
     outline-offset: 1px;
   }
 
+  .date-row input[type="number"] {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 13.5px;
+    color: var(--ink);
+    background: var(--surface-2);
+    border: 1px solid var(--line-strong);
+    border-radius: 8px;
+    padding: 7px 10px;
+    font-variant-numeric: tabular-nums;
+    width: 120px;
+  }
+
+  .date-row input[type="number"]::-webkit-inner-spin-button,
+  .date-row input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
+
+  .date-row input[type="number"]:focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 1px;
+  }
+
+  .date-row .unit-inline {
+    font-size: 12.5px;
+    color: var(--ink-faint);
+  }
+
   .save-btn {
     font-family: "IBM Plex Sans Thai", sans-serif;
     font-size: 13px;
@@ -423,6 +448,17 @@
   .date-cell.est { color: var(--ink-faint); }
   .date-cell.muted { color: var(--ink-faint); }
 
+  .date-cell-sub {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    color: var(--ink-faint);
+    margin-top: 2px;
+  }
+
+  .date-cell-sub.due { color: var(--accent); font-weight: 600; }
+
   .tags {
     display: flex;
     flex-wrap: wrap;
@@ -536,6 +572,11 @@
       <div class="date-row">
         <span class="label" id="dateFieldLabel">วันที่เข้าเช็ค</span>
         <input type="date" id="lastDoneDateInput">
+      </div>
+      <div class="date-row">
+        <span class="label">เลขไมล์ที่เช็ค</span>
+        <input type="number" id="lastDoneOdometerInput" placeholder="เช่น 5230" min="0" step="1" inputmode="numeric">
+        <span class="unit-inline">กม.</span>
         <button type="button" class="save-btn" id="saveDateBtn">บันทึก</button>
       </div>
       <div class="due-out" id="forRoundHint"></div>
@@ -550,7 +591,7 @@
         <thead>
           <tr>
             <th>รอบ</th>
-            <th>วันที่</th>
+            <th>วันที่ / ไมล์</th>
             <th>รายการที่ต้องเปลี่ยน</th>
             <th class="num">ค่าแรง</th>
             <th class="num">ค่าอะไหล่</th>
@@ -589,6 +630,8 @@
 
   var STORE_KEY = "nevoQ05_lastDoneKm";
   var DATE_KEY = "nevoQ05_lastDoneDate";
+  var ODOMETER_KEY = "nevoQ05_lastOdometer";
+  var STEP_KM = 10000; // ระยะห่างระหว่างรอบตามตาราง (คงที่ทุกรอบ)
 
   function fmt(n) { return n.toLocaleString("th-TH"); }
 
@@ -606,6 +649,7 @@
   function clearLastDoneKm() {
     try { localStorage.removeItem(STORE_KEY); } catch (e) {}
     try { localStorage.removeItem(DATE_KEY); } catch (e) {}
+    try { localStorage.removeItem(ODOMETER_KEY); } catch (e) {}
   }
 
   function getLastDoneDate() {
@@ -614,6 +658,17 @@
 
   function setLastDoneDate(isoDate) {
     try { localStorage.setItem(DATE_KEY, isoDate); } catch (e) {}
+  }
+
+  function getLastOdometer() {
+    try {
+      var v = localStorage.getItem(ODOMETER_KEY);
+      return v ? parseInt(v, 10) : null;
+    } catch (e) { return null; }
+  }
+
+  function setLastOdometer(km) {
+    try { localStorage.setItem(ODOMETER_KEY, String(km)); } catch (e) {}
   }
 
   function todayISO() {
@@ -652,6 +707,7 @@
 
     // date recorded for the most recently completed round (markDone always stamps it)
     var lastDoneDate = getLastDoneDate();
+    var lastOdometer = getLastOdometer();
 
     // status rows
     var statusRows = document.getElementById("statusRows");
@@ -659,9 +715,10 @@
     if (doneIndex >= 0) {
       var doneStep = SCHEDULE[doneIndex];
       var doneDateText = lastDoneDate ? " (" + formatThaiDate(parseISODate(lastDoneDate)) + ")" : "";
+      var doneOdoText = lastOdometer ? " · ไมล์ " + fmt(lastOdometer) + " กม." : "";
       var r1 = document.createElement("div");
       r1.className = "status-row";
-      r1.innerHTML = '<span class="label">รอบล่าสุด</span><span class="badge-done">✓ ' + fmt(doneStep.km) + ' กม. / ' + doneStep.mo + ' เดือน — เช็คแล้ว' + doneDateText + '</span>';
+      r1.innerHTML = '<span class="label">รอบล่าสุด</span><span class="badge-done">✓ ' + fmt(doneStep.km) + ' กม. / ' + doneStep.mo + ' เดือน — เช็คแล้ว' + doneDateText + doneOdoText + '</span>';
       statusRows.appendChild(r1);
     }
     var nextStep = SCHEDULE[nextIndex];
@@ -675,18 +732,21 @@
     var dateInput = document.getElementById("lastDoneDateInput");
     dateInput.value = "";
     dateInput.dataset.forKm = nextStep.km;
+    var odoInput = document.getElementById("lastDoneOdometerInput");
+    odoInput.value = "";
+    odoInput.dataset.forKm = nextStep.km;
 
     document.getElementById("forRoundHint").textContent =
-      "จะบันทึกให้รอบ " + fmt(nextStep.km) + " กม. / " + nextStep.mo + " เดือน (รอบที่กำลังรออยู่)";
+      "จะบันทึกให้รอบ " + fmt(nextStep.km) + " กม. / " + nextStep.mo + " เดือน (รอบที่กำลังรออยู่) — กรอกทั้งวันที่และเลขไมล์ที่เข้าเช็คจริง";
 
     var dueOut = document.getElementById("dueOut");
-    if (lastDoneDate) {
-      var dueDate = addMonthsISO(lastDoneDate, 12);
+    if (lastOdometer) {
+      var nextDueOdo = lastOdometer + STEP_KM;
       dueOut.className = "due-out";
-      dueOut.innerHTML = "กำหนดเข้าเช็คครั้งถัดไป: <strong>" + formatThaiDate(dueDate) + "</strong>";
+      dueOut.innerHTML = "กำหนดเข้าเช็คครั้งถัดไป: <strong>ไมล์ประมาณ " + fmt(nextDueOdo) + " กม.</strong>";
     } else {
       dueOut.className = "due-out empty";
-      dueOut.textContent = "กรอกวันที่เข้าเช็ครอบนี้ เพื่อบันทึกว่าเช็คแล้ว และคำนวณวันครบกำหนดรอบถัดไป";
+      dueOut.textContent = "กรอกเลขไมล์ที่เข้าเช็ครอบนี้ เพื่อคำนวณเลขไมล์ครบกำหนดรอบถัดไป";
     }
 
     // status note
@@ -726,9 +786,21 @@
           : '<span class="date-cell est">~' + formatThaiDate(projected) + '</span>';
       }
 
+      var odoHtml;
+      if (i === doneIndex && lastOdometer) {
+        odoHtml = '<div class="date-cell-sub">ไมล์ ' + fmt(lastOdometer) + ' กม.</div>';
+      } else if (i < doneIndex || !lastOdometer) {
+        odoHtml = '';
+      } else {
+        var projectedOdo = lastOdometer + STEP_KM * (i - doneIndex);
+        odoHtml = i === nextIndex
+          ? '<div class="date-cell-sub due">ครบกำหนดไมล์ ~' + fmt(projectedOdo) + ' กม.</div>'
+          : '<div class="date-cell-sub">~ไมล์ ' + fmt(projectedOdo) + ' กม.</div>';
+      }
+
       tr.innerHTML =
         '<td><div class="interval"><span class="km">' + fmt(step.km) + '</span><span class="mo">' + step.mo + ' เดือน</span></div></td>' +
-        '<td>' + dateHtml + '</td>' +
+        '<td>' + dateHtml + odoHtml + '</td>' +
         '<td><div class="tags">' + tagsHtml + '</div></td>' +
         '<td class="num">' + step.labor + '</td>' +
         '<td class="num">' + fmt(step.partCost) + '</td>' +
@@ -739,21 +811,30 @@
     });
   }
 
-  function markDone(km, isoDate) {
+  function markDone(km, isoDate, odometer) {
     setLastDoneKm(km);
     setLastDoneDate(isoDate || todayISO());
+    if (odometer !== undefined && odometer !== null && !isNaN(odometer)) {
+      setLastOdometer(odometer);
+    }
     render();
   }
 
   function saveDate() {
     var dateInput = document.getElementById("lastDoneDateInput");
+    var odoInput = document.getElementById("lastDoneOdometerInput");
     if (!dateInput.value) {
       dateInput.focus();
       dateInput.reportValidity && dateInput.reportValidity();
       return;
     }
+    if (!odoInput.value) {
+      odoInput.focus();
+      odoInput.reportValidity && odoInput.reportValidity();
+      return;
+    }
     var km = parseInt(dateInput.dataset.forKm, 10);
-    markDone(km, dateInput.value);
+    markDone(km, dateInput.value, parseInt(odoInput.value, 10));
   }
 
   document.addEventListener("click", function (e) {
@@ -764,14 +845,8 @@
   });
 
   document.addEventListener("keydown", function (e) {
-    if (e.target.id === "lastDoneDateInput" && e.key === "Enter") {
+    if ((e.target.id === "lastDoneDateInput" || e.target.id === "lastDoneOdometerInput") && e.key === "Enter") {
       e.preventDefault();
-      saveDate();
-    }
-  });
-
-  document.addEventListener("change", function (e) {
-    if (e.target.id === "lastDoneDateInput" && e.target.value) {
       saveDate();
     }
   });
