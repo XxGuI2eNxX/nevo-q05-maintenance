@@ -265,6 +265,27 @@
     outline-offset: 1px;
   }
 
+  .save-btn {
+    font-family: "IBM Plex Sans Thai", sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: #fff;
+    background: var(--brand);
+    border: none;
+    border-radius: 8px;
+    padding: 8px 14px;
+    cursor: pointer;
+  }
+
+  .save-btn:hover { filter: brightness(1.08); }
+
+  .save-btn:active { filter: brightness(0.94); }
+
+  .save-btn:focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
+  }
+
   .due-out {
     font-size: 13.5px;
     color: var(--ink-soft);
@@ -503,6 +524,7 @@
       <div class="date-row">
         <span class="label">วันที่เข้าเช็ค</span>
         <input type="date" id="lastDoneDateInput">
+        <button type="button" class="save-btn" id="saveDateBtn">บันทึก</button>
       </div>
       <div class="due-out" id="dueOut"></div>
     </div>
@@ -531,7 +553,7 @@
     <div class="foot-line"><span class="dot">·</span><span>ค่าแรงคิดที่ 600 บาท/ชั่วโมง — ราคารวม VAT 7% แล้ว</span></div>
     <div class="foot-line"><span class="dot">·</span><span>ระยะเปลี่ยนอะไหล่อ้างอิงตามระยะทางจริง การใช้งานหนัก/สภาพขับขี่อาจทำให้ต้องเปลี่ยนเร็วกว่ากำหนด</span></div>
     <div class="foot-line"><span class="dot">·</span><span>บริษัทฯ ขอสงวนสิทธิ์ปรับราคาโดยไม่ต้องแจ้งล่วงหน้า</span></div>
-    <div class="foot-line hint">·&nbsp;<span>กรอกวันที่เข้าเช็คด้านบน หรือแตะที่แถวไหนก็ได้ เพื่อบันทึกว่าเช็คแล้วถึงรอบนั้น — บันทึกไว้ในเบราว์เซอร์นี้เท่านั้น <button class="reset-link" id="resetBtn" type="button">ล้างค่า</button></span></div>
+    <div class="foot-line hint">·&nbsp;<span>กรอกวันที่แล้วกดบันทึก หรือแตะที่แถวไหนก็ได้ เพื่อบันทึกว่าเช็คแล้วถึงรอบนั้น — บันทึกไว้เฉพาะในเบราว์เซอร์/เครื่องที่เปิดอยู่นี้เท่านั้น <button class="reset-link" id="resetBtn" type="button">ล้างค่า</button></span></div>
   </div>
 
 </div>
@@ -692,16 +714,34 @@
     render();
   }
 
+  function saveDate() {
+    var dateInput = document.getElementById("lastDoneDateInput");
+    if (!dateInput.value) {
+      dateInput.focus();
+      dateInput.reportValidity && dateInput.reportValidity();
+      return;
+    }
+    var km = parseInt(dateInput.dataset.forKm, 10);
+    markDone(km, dateInput.value);
+  }
+
   document.addEventListener("click", function (e) {
     var btn = e.target.closest(".badge-next");
     if (btn) { markDone(parseInt(btn.dataset.km, 10)); return; }
-    if (e.target.id === "resetBtn") { clearLastDoneKm(); render(); }
+    if (e.target.id === "resetBtn") { clearLastDoneKm(); render(); return; }
+    if (e.target.id === "saveDateBtn") { saveDate(); return; }
+  });
+
+  document.addEventListener("keydown", function (e) {
+    if (e.target.id === "lastDoneDateInput" && e.key === "Enter") {
+      e.preventDefault();
+      saveDate();
+    }
   });
 
   document.addEventListener("change", function (e) {
     if (e.target.id === "lastDoneDateInput" && e.target.value) {
-      var km = parseInt(e.target.dataset.forKm, 10);
-      markDone(km, e.target.value);
+      saveDate();
     }
   });
 
