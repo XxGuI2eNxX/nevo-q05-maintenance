@@ -727,17 +727,25 @@
     r2.innerHTML = '<span class="label">รอบถัดไป</span><button type="button" class="badge-next" data-km="' + nextStep.km + '">' + fmt(nextStep.km) + ' กม. / ' + nextStep.mo + ' เดือน</button>';
     statusRows.appendChild(r2);
 
-    // the date field always records the check-in date for the CURRENT pending round (nextStep);
-    // entering a date marks that round done and computes the next-due date from it
+    // the date/odometer fields normally record the check-in for the CURRENT pending round (nextStep).
+    // EXCEPTION: if a round is already marked done but has no odometer on record yet (e.g. it was
+    // marked done before this odometer feature existed), point the form at that already-done round
+    // instead — so the first mileage entry backfills its real reading rather than accidentally
+    // advancing to the next round.
+    var isBackfill = (doneIndex >= 0 && !lastOdometer);
+    var formStep = isBackfill ? SCHEDULE[doneIndex] : nextStep;
+
     var dateInput = document.getElementById("lastDoneDateInput");
-    dateInput.value = "";
-    dateInput.dataset.forKm = nextStep.km;
+    dateInput.value = isBackfill && lastDoneDate ? lastDoneDate : "";
+    dateInput.dataset.forKm = formStep.km;
+    dateInput.dataset.backfill = isBackfill ? "1" : "";
     var odoInput = document.getElementById("lastDoneOdometerInput");
     odoInput.value = "";
-    odoInput.dataset.forKm = nextStep.km;
+    odoInput.dataset.forKm = formStep.km;
 
-    document.getElementById("forRoundHint").textContent =
-      "จะบันทึกให้รอบ " + fmt(nextStep.km) + " กม. / " + nextStep.mo + " เดือน (รอบที่กำลังรออยู่) — กรอกทั้งวันที่และเลขไมล์ที่เข้าเช็คจริง";
+    document.getElementById("forRoundHint").textContent = isBackfill
+      ? "กรอกเลขไมล์จริงของรอบ " + fmt(formStep.km) + " กม. / " + formStep.mo + " เดือน (รอบที่เช็คไปแล้ว) เพื่อใช้เป็นฐานคำนวณรอบถัดไป — ไม่กระทบรอบที่เช็คแล้ว"
+      : "จะบันทึกให้รอบ " + fmt(formStep.km) + " กม. / " + formStep.mo + " เดือน (รอบที่กำลังรออยู่) — กรอกทั้งวันที่และเลขไมล์ที่เข้าเช็คจริง";
 
     var dueOut = document.getElementById("dueOut");
     if (lastOdometer) {
@@ -831,6 +839,14 @@
     if (!odoInput.value) {
       odoInput.focus();
       odoInput.reportValidity && odoInput.reportValidity();
+      return;
+    }
+    if (dateInput.dataset.backfill === "1") {
+      // backfill: record the real odometer (and date) for the round already marked done —
+      // does NOT advance to the next round.
+      setLastDoneDate(dateInput.value);
+      setLastOdometer(parseInt(odoInput.value, 10));
+      render();
       return;
     }
     var km = parseInt(dateInput.dataset.forKm, 10);
