@@ -24,6 +24,8 @@
     --accent-line: #eab676;
     --good: #157347;
     --good-soft: #e3f3ea;
+    --danger: #c0392b;
+    --danger-soft: #fbe9e7;
     --shadow: 0 1px 2px rgba(21,27,46,0.04), 0 8px 24px -12px rgba(21,27,46,0.12);
   }
 
@@ -44,6 +46,8 @@
       --accent-line: #5a4322;
       --good: #4fd196;
       --good-soft: #14291f;
+      --danger: #f2665f;
+      --danger-soft: #3a1a17;
       --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px -12px rgba(0,0,0,0.5);
     }
   }
@@ -64,6 +68,8 @@
     --accent-line: #5a4322;
     --good: #4fd196;
     --good-soft: #14291f;
+    --danger: #f2665f;
+    --danger-soft: #3a1a17;
     --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px -12px rgba(0,0,0,0.5);
   }
 
@@ -529,6 +535,30 @@
 
   .reset-link:hover { color: var(--ink-soft); }
 
+  .row-actions {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+
+  .row-action-btn {
+    background: none;
+    border: none;
+    padding: 0;
+    font: inherit;
+    font-size: 12px;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .row-edit-btn { color: var(--brand); }
+  .row-edit-btn:hover { filter: brightness(1.15); }
+
+  .row-delete-btn { color: var(--danger); }
+  .row-delete-btn:hover { filter: brightness(1.15); }
+
   @media (max-width: 560px) {
     .status-note .cost { margin-left: 0; }
   }
@@ -578,6 +608,7 @@
             <th class="num">ค่าแรง</th>
             <th class="num">ค่าอะไหล่</th>
             <th class="num">รวม (บาท)</th>
+            <th>จัดการ</th>
           </tr>
         </thead>
         <tbody id="tbody"></tbody>
@@ -805,15 +836,41 @@
         cellHtml = '<span class="date-cell muted">—</span>';
       }
 
+      var actionsHtml = rec
+        ? '<div class="row-actions"><button type="button" class="row-action-btn row-edit-btn" data-km="' + step.km + '">แก้ไข</button><button type="button" class="row-action-btn row-delete-btn" data-km="' + step.km + '">ลบ</button></div>'
+        : '<span class="date-cell muted">—</span>';
+
       tr.innerHTML =
         '<td><div class="interval"><span class="km">' + fmt(step.km) + '</span><span class="mo">' + step.mo + ' เดือน</span></div></td>' +
         '<td>' + cellHtml + '</td>' +
         '<td><div class="tags">' + tagsHtml + '</div></td>' +
         '<td class="num">' + step.labor + '</td>' +
         '<td class="num">' + fmt(step.partCost) + '</td>' +
-        '<td class="num total">' + fmt(step.total) + '</td>';
+        '<td class="num total">' + fmt(step.total) + '</td>' +
+        '<td>' + actionsHtml + '</td>';
 
       tr.addEventListener("click", function () { selectRound(step.km); });
+
+      var editBtn = tr.querySelector(".row-edit-btn");
+      if (editBtn) {
+        editBtn.addEventListener("click", function (e) {
+          e.stopPropagation();
+          selectRound(step.km);
+        });
+      }
+      var deleteBtn = tr.querySelector(".row-delete-btn");
+      if (deleteBtn) {
+        deleteBtn.addEventListener("click", function (e) {
+          e.stopPropagation();
+          var ok = confirm("ลบข้อมูลรอบ " + fmt(step.km) + " กม. ใช่หรือไม่?");
+          if (!ok) return;
+          var records2 = getRecords();
+          delete records2[String(step.km)];
+          setRecords(records2);
+          render();
+        });
+      }
+
       tbody.appendChild(tr);
     });
   }
