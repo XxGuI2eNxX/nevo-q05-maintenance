@@ -739,15 +739,16 @@
     r2.innerHTML = '<span class="label">รอบถัดไป</span><button type="button" class="badge-next" data-km="' + nextStep.km + '">' + fmt(nextStep.km) + ' กม. / ' + nextStep.mo + ' เดือน</button>';
     statusRows.appendChild(r2);
 
-    // due-out: only the calculated next check-in mileage, based on the last recorded odometer + fixed step
+    // due-out: only the calculated next check-in DATE, based on the last recorded date + fixed 12-month step
     var dueOut = document.getElementById("dueOut");
-    if (lastRecord && lastRecord.odo !== null && lastRecord.odo !== undefined) {
-      var nextDueOdo = lastRecord.odo + STEP_KM;
+    if (lastRecord && lastRecord.date) {
+      var dueStepsAhead = nextIndex - doneIndex;
+      var nextDueDate = addMonthsISO(lastRecord.date, 12 * dueStepsAhead);
       dueOut.className = "due-out";
-      dueOut.innerHTML = "กำหนดเข้าเช็คครั้งถัดไป: <strong>ไมล์ประมาณ " + fmt(nextDueOdo) + " กม.</strong>";
+      dueOut.innerHTML = "กำหนดเข้าเช็คครั้งถัดไป: <strong>" + formatThaiDate(nextDueDate) + "</strong>";
     } else if (doneIndex >= 0) {
       dueOut.className = "due-out empty";
-      dueOut.textContent = "กรอกเลขไมล์ของรอบ " + fmt(SCHEDULE[doneIndex].km) + " กม. เพื่อคำนวณไมล์ครบกำหนดรอบถัดไป";
+      dueOut.textContent = "กรอกวันที่ของรอบ " + fmt(SCHEDULE[doneIndex].km) + " กม. เพื่อคำนวณวันครบกำหนดรอบถัดไป";
     } else {
       dueOut.className = "due-out empty";
       dueOut.textContent = "ยังไม่มีข้อมูลการเช็ค — เลือกระยะ กรอกวันที่และเลขไมล์ด้านล่างเพื่อเริ่มบันทึก";
@@ -795,19 +796,11 @@
         var dateLine = rec.date ? '<span class="date-cell done">✓ ' + formatThaiDate(parseISODate(rec.date)) + '</span>' : '<span class="date-cell done">✓ เช็คแล้ว</span>';
         var odoLine = (rec.odo !== null && rec.odo !== undefined) ? '<div class="date-cell-sub">ไมล์ ' + fmt(rec.odo) + ' กม.</div>' : '<div class="date-cell-sub">ยังไม่มีเลขไมล์</div>';
         cellHtml = dateLine + odoLine;
-      } else if (i === nextIndex && lastRecord) {
-        // no record yet for the upcoming round — project its due date/mileage from the last recorded round
+      } else if (i === nextIndex && lastRecord && lastRecord.date) {
+        // no record yet for the upcoming round — project its due date only, from the last recorded round's date
         var stepsAhead = nextIndex - doneIndex;
-        var projLines = [];
-        if (lastRecord.date) {
-          var projectedDate = addMonthsISO(lastRecord.date, 12 * stepsAhead);
-          projLines.push('<div class="date-cell-sub due">ครบกำหนด ~' + formatThaiDate(projectedDate) + '</div>');
-        }
-        if (lastRecord.odo !== null && lastRecord.odo !== undefined) {
-          var projectedOdo = lastRecord.odo + STEP_KM * stepsAhead;
-          projLines.push('<div class="date-cell-sub due">~ไมล์ ' + fmt(projectedOdo) + ' กม.</div>');
-        }
-        cellHtml = projLines.length ? projLines.join("") : '<span class="date-cell muted">—</span>';
+        var projectedDate = addMonthsISO(lastRecord.date, 12 * stepsAhead);
+        cellHtml = '<div class="date-cell-sub due">ครบกำหนด ~' + formatThaiDate(projectedDate) + '</div>';
       } else {
         cellHtml = '<span class="date-cell muted">—</span>';
       }
