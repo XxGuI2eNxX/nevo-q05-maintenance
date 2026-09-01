@@ -621,11 +621,13 @@
     <div class="foot-line"><span class="dot">·</span><span>ค่าแรงคิดที่ 600 บาท/ชั่วโมง — ราคารวม VAT 7% แล้ว</span></div>
     <div class="foot-line"><span class="dot">·</span><span>ระยะเปลี่ยนอะไหล่อ้างอิงตามระยะทางจริง การใช้งานหนัก/สภาพขับขี่อาจทำให้ต้องเปลี่ยนเร็วกว่ากำหนด</span></div>
     <div class="foot-line"><span class="dot">·</span><span>บริษัทฯ ขอสงวนสิทธิ์ปรับราคาโดยไม่ต้องแจ้งล่วงหน้า</span></div>
-    <div class="foot-line hint">·&nbsp;<span>เลือกระยะ กรอกวันที่และเลขไมล์ที่เข้าเช็คจริงแล้วกดบันทึก หรือแตะที่แถวไหนก็ได้เพื่อเลือกรอบนั้นในฟอร์ม — บันทึกไว้เฉพาะในเบราว์เซอร์/เครื่องที่เปิดอยู่นี้เท่านั้น <button class="reset-link" id="resetBtn" type="button">ล้างค่า</button></span></div>
+    <div class="foot-line hint">·&nbsp;<span>เลือกระยะ กรอกวันที่และเลขไมล์ที่เข้าเช็คจริงแล้วกดบันทึก หรือแตะที่แถวไหนก็ได้เพื่อเลือกรอบนั้นในฟอร์ม — ข้อมูลซิงค์ผ่านอินเทอร์เน็ต เปิดจากเครื่องไหนก็เห็นชุดเดียวกัน <button class="reset-link" id="resetBtn" type="button">ล้างค่า</button></span></div>
   </div>
 
 </div>
 
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
 <script>
   var SCHEDULE = [
     { km: 5000,   mo: 6,   parts: [{name:"แผ่นกรองแอร์", cost:398, filter:true}], labor:"0.6 ชม.", partCost:398,  total:758  },
@@ -641,44 +643,45 @@
     { km: 105000, mo: 126, parts: [{name:"แผ่นกรองแอร์", cost:398, filter:true}], labor:"0.6 ชม.", partCost:398,  total:758  }
   ];
 
-  var RECORDS_KEY = "nevoQ05_records";
-  // legacy keys from earlier versions of this app — read once for migration only
-  var LEGACY_KM_KEY = "nevoQ05_lastDoneKm";
-  var LEGACY_DATE_KEY = "nevoQ05_lastDoneDate";
-  var LEGACY_ODO_KEY = "nevoQ05_lastOdometer";
-
   var STEP_KM = 10000; // ระยะห่างระหว่างรอบตามตาราง (คงที่ทุกรอบ)
+
+  // ---------- Firebase (Firestore) ----------
+  var firebaseConfig = {
+    apiKey: "AIzaSyAWhMW2X6sBPlGcHgOxs7YQ9ydYSycog2w",
+    authDomain: "nevo-q05-maintenance.firebaseapp.com",
+    projectId: "nevo-q05-maintenance",
+    storageBucket: "nevo-q05-maintenance.firebasestorage.app",
+    messagingSenderId: "917605714827",
+    appId: "1:917605714827:web:3e525538343af10cd03d8e"
+  };
+  firebase.initializeApp(firebaseConfig);
+  var db = firebase.firestore();
+  var stateDocRef = db.collection("maintenance").doc("state");
+
+  var cachedRecords = {};
+  var firebaseReady = false; // true once the first snapshot has arrived
 
   function fmt(n) { return n.toLocaleString("th-TH"); }
 
+  // synchronous read from the in-memory cache kept in sync by onSnapshot below
   function getRecords() {
-    try {
-      var raw = localStorage.getItem(RECORDS_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return cachedRecords;
   }
 
+  // writes the full records object to Firestore; every connected device gets it via onSnapshot
   function setRecords(records) {
-    try { localStorage.setItem(RECORDS_KEY, JSON.stringify(records)); } catch (e) {}
+    cachedRecords = records;
+    stateDocRef.set({
+      records: records,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }).catch(function (err) {
+      console.error("บันทึกไป Firestore ไม่สำเร็จ:", err);
+      alert("บันทึกข้อมูลไม่สำเร็จ — ตรวจสอบการเชื่อมต่ออินเทอร์เน็ตแล้วลองใหม่อีกครั้ง\n(" + err.message + ")");
+    });
   }
 
   function clearRecords() {
-    try { localStorage.removeItem(RECORDS_KEY); } catch (e) {}
-  }
-
-  // one-time migration from the old single-"last round" storage format
-  function migrateLegacyDataIfNeeded() {
-    try {
-      if (localStorage.getItem(RECORDS_KEY)) return; // already on the new format
-      var oldKm = localStorage.getItem(LEGACY_KM_KEY);
-      var oldDate = localStorage.getItem(LEGACY_DATE_KEY);
-      var oldOdo = localStorage.getItem(LEGACY_ODO_KEY);
-      if (oldKm && oldDate) {
-        var records = {};
-        records[oldKm] = { date: oldDate, odo: oldOdo ? parseInt(oldOdo, 10) : null };
-        setRecords(records);
-      }
-    } catch (e) {}
+    setRecords({});
   }
 
   function todayISO() {
@@ -927,8 +930,20 @@
     }
   });
 
-  migrateLegacyDataIfNeeded();
-  render();
+  // show a loading state until the first snapshot arrives from Firestore
+  document.getElementById("dueOut").className = "due-out empty";
+  document.getElementById("dueOut").textContent = "กำลังเชื่อมต่อฐานข้อมูล...";
+
+  stateDocRef.onSnapshot(function (snap) {
+    var data = snap.data();
+    cachedRecords = (data && data.records) ? data.records : {};
+    firebaseReady = true;
+    render();
+  }, function (err) {
+    console.error("เชื่อมต่อ Firestore ไม่สำเร็จ:", err);
+    document.getElementById("dueOut").className = "due-out empty";
+    document.getElementById("dueOut").textContent = "เชื่อมต่อฐานข้อมูลไม่สำเร็จ — ตรวจสอบอินเทอร์เน็ตแล้วลองรีเฟรชหน้านี้ (" + err.message + ")";
+  });
 </script>
 
 </body>
