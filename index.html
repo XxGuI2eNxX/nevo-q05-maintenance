@@ -130,32 +130,6 @@
     gap: 16px;
   }
 
-  .status-top {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    gap: 12px;
-    flex-wrap: wrap;
-  }
-
-  .odo {
-    display: flex;
-    align-items: baseline;
-    gap: 8px;
-  }
-
-  .odo-value {
-    font-family: "IBM Plex Mono", ui-monospace, monospace;
-    font-size: 30px;
-    font-weight: 600;
-    font-variant-numeric: tabular-nums;
-  }
-
-  .odo-unit {
-    color: var(--ink-faint);
-    font-size: 14px;
-  }
-
   .badge-next {
     display: inline-flex;
     align-items: center;
@@ -168,6 +142,8 @@
     padding: 6px 12px;
     border-radius: 999px;
     white-space: nowrap;
+    cursor: pointer;
+    font-family: inherit;
   }
 
   .badge-next::before {
@@ -176,6 +152,13 @@
     height: 6px;
     border-radius: 50%;
     background: var(--accent);
+  }
+
+  .badge-next:hover { filter: brightness(0.96); }
+
+  .badge-next:focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
   }
 
   .badge-done {
@@ -212,18 +195,20 @@
     flex-shrink: 0;
   }
 
-  .status-row button.badge-next {
-    cursor: pointer;
-    font-family: inherit;
+  .due-out {
+    font-size: 13.5px;
+    color: var(--ink-soft);
   }
 
-  .status-row button.badge-next:hover {
-    filter: brightness(0.96);
+  .due-out strong {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    color: var(--accent);
+    font-weight: 600;
   }
 
-  .status-row button.badge-next:focus-visible {
-    outline: 2px solid var(--brand);
-    outline-offset: 2px;
+  .due-out.empty {
+    color: var(--ink-faint);
+    font-style: normal;
   }
 
   .date-block {
@@ -249,7 +234,8 @@
     flex-shrink: 0;
   }
 
-  .date-row input[type="date"] {
+  .date-row input[type="date"],
+  .date-row select {
     font-family: "IBM Plex Mono", ui-monospace, monospace;
     font-size: 13.5px;
     color: var(--ink);
@@ -260,7 +246,12 @@
     font-variant-numeric: tabular-nums;
   }
 
-  .date-row input[type="date"]:focus-visible {
+  .date-row select {
+    min-width: 220px;
+  }
+
+  .date-row input[type="date"]:focus-visible,
+  .date-row select:focus-visible {
     outline: 2px solid var(--brand);
     outline-offset: 1px;
   }
@@ -311,20 +302,9 @@
     outline-offset: 2px;
   }
 
-  .due-out {
-    font-size: 13.5px;
-    color: var(--ink-soft);
-  }
-
-  .due-out strong {
-    font-family: "IBM Plex Mono", ui-monospace, monospace;
-    color: var(--accent);
-    font-weight: 600;
-  }
-
-  .due-out.empty {
+  .form-hint {
+    font-size: 12.5px;
     color: var(--ink-faint);
-    font-style: normal;
   }
 
   .status-note {
@@ -444,8 +424,6 @@
   }
 
   .date-cell.done { color: var(--good); font-weight: 600; }
-  .date-cell.due { color: var(--accent); font-weight: 600; }
-  .date-cell.est { color: var(--ink-faint); }
   .date-cell.muted { color: var(--ink-faint); }
 
   .date-cell-sub {
@@ -456,8 +434,6 @@
     color: var(--ink-faint);
     margin-top: 2px;
   }
-
-  .date-cell-sub.due { color: var(--accent); font-weight: 600; }
 
   .tags {
     display: flex;
@@ -568,9 +544,14 @@
 
   <div class="status">
     <div class="status-rows" id="statusRows"></div>
+    <div class="due-out" id="dueOut"></div>
     <div class="date-block">
       <div class="date-row">
-        <span class="label" id="dateFieldLabel">วันที่เข้าเช็ค</span>
+        <span class="label">เลือกระยะ</span>
+        <select id="roundSelect"></select>
+      </div>
+      <div class="date-row">
+        <span class="label">วันที่เข้าเช็ค</span>
         <input type="date" id="lastDoneDateInput">
       </div>
       <div class="date-row">
@@ -579,8 +560,7 @@
         <span class="unit-inline">กม.</span>
         <button type="button" class="save-btn" id="saveDateBtn">บันทึก</button>
       </div>
-      <div class="due-out" id="forRoundHint"></div>
-      <div class="due-out" id="dueOut"></div>
+      <div class="form-hint" id="formHint"></div>
     </div>
     <div class="status-note" id="statusNote"></div>
   </div>
@@ -591,7 +571,7 @@
         <thead>
           <tr>
             <th>รอบ</th>
-            <th>วันที่ / ไมล์</th>
+            <th>วันที่ / ไมล์ที่เช็ค</th>
             <th>รายการที่ต้องเปลี่ยน</th>
             <th class="num">ค่าแรง</th>
             <th class="num">ค่าอะไหล่</th>
@@ -608,7 +588,7 @@
     <div class="foot-line"><span class="dot">·</span><span>ค่าแรงคิดที่ 600 บาท/ชั่วโมง — ราคารวม VAT 7% แล้ว</span></div>
     <div class="foot-line"><span class="dot">·</span><span>ระยะเปลี่ยนอะไหล่อ้างอิงตามระยะทางจริง การใช้งานหนัก/สภาพขับขี่อาจทำให้ต้องเปลี่ยนเร็วกว่ากำหนด</span></div>
     <div class="foot-line"><span class="dot">·</span><span>บริษัทฯ ขอสงวนสิทธิ์ปรับราคาโดยไม่ต้องแจ้งล่วงหน้า</span></div>
-    <div class="foot-line hint">·&nbsp;<span>กรอกวันที่แล้วกดบันทึก หรือแตะที่แถวไหนก็ได้ เพื่อบันทึกว่าเช็คแล้วถึงรอบนั้น — บันทึกไว้เฉพาะในเบราว์เซอร์/เครื่องที่เปิดอยู่นี้เท่านั้น <button class="reset-link" id="resetBtn" type="button">ล้างค่า</button></span></div>
+    <div class="foot-line hint">·&nbsp;<span>เลือกระยะ กรอกวันที่และเลขไมล์ที่เข้าเช็คจริงแล้วกดบันทึก หรือแตะที่แถวไหนก็ได้เพื่อเลือกรอบนั้นในฟอร์ม — บันทึกไว้เฉพาะในเบราว์เซอร์/เครื่องที่เปิดอยู่นี้เท่านั้น <button class="reset-link" id="resetBtn" type="button">ล้างค่า</button></span></div>
   </div>
 
 </div>
@@ -628,47 +608,44 @@
     { km: 105000, mo: 126, parts: [{name:"แผ่นกรองแอร์", cost:398, filter:true}], labor:"0.6 ชม.", partCost:398,  total:758  }
   ];
 
-  var STORE_KEY = "nevoQ05_lastDoneKm";
-  var DATE_KEY = "nevoQ05_lastDoneDate";
-  var ODOMETER_KEY = "nevoQ05_lastOdometer";
+  var RECORDS_KEY = "nevoQ05_records";
+  // legacy keys from earlier versions of this app — read once for migration only
+  var LEGACY_KM_KEY = "nevoQ05_lastDoneKm";
+  var LEGACY_DATE_KEY = "nevoQ05_lastDoneDate";
+  var LEGACY_ODO_KEY = "nevoQ05_lastOdometer";
+
   var STEP_KM = 10000; // ระยะห่างระหว่างรอบตามตาราง (คงที่ทุกรอบ)
 
   function fmt(n) { return n.toLocaleString("th-TH"); }
 
-  function getLastDoneKm() {
+  function getRecords() {
     try {
-      var v = localStorage.getItem(STORE_KEY);
-      return v ? parseInt(v, 10) : null;
-    } catch (e) { return null; }
+      var raw = localStorage.getItem(RECORDS_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
   }
 
-  function setLastDoneKm(km) {
-    try { localStorage.setItem(STORE_KEY, String(km)); } catch (e) {}
+  function setRecords(records) {
+    try { localStorage.setItem(RECORDS_KEY, JSON.stringify(records)); } catch (e) {}
   }
 
-  function clearLastDoneKm() {
-    try { localStorage.removeItem(STORE_KEY); } catch (e) {}
-    try { localStorage.removeItem(DATE_KEY); } catch (e) {}
-    try { localStorage.removeItem(ODOMETER_KEY); } catch (e) {}
+  function clearRecords() {
+    try { localStorage.removeItem(RECORDS_KEY); } catch (e) {}
   }
 
-  function getLastDoneDate() {
-    try { return localStorage.getItem(DATE_KEY) || ""; } catch (e) { return ""; }
-  }
-
-  function setLastDoneDate(isoDate) {
-    try { localStorage.setItem(DATE_KEY, isoDate); } catch (e) {}
-  }
-
-  function getLastOdometer() {
+  // one-time migration from the old single-"last round" storage format
+  function migrateLegacyDataIfNeeded() {
     try {
-      var v = localStorage.getItem(ODOMETER_KEY);
-      return v ? parseInt(v, 10) : null;
-    } catch (e) { return null; }
-  }
-
-  function setLastOdometer(km) {
-    try { localStorage.setItem(ODOMETER_KEY, String(km)); } catch (e) {}
+      if (localStorage.getItem(RECORDS_KEY)) return; // already on the new format
+      var oldKm = localStorage.getItem(LEGACY_KM_KEY);
+      var oldDate = localStorage.getItem(LEGACY_DATE_KEY);
+      var oldOdo = localStorage.getItem(LEGACY_ODO_KEY);
+      if (oldKm && oldDate) {
+        var records = {};
+        records[oldKm] = { date: oldDate, odo: oldOdo ? parseInt(oldOdo, 10) : null };
+        setRecords(records);
+      }
+    } catch (e) {}
   }
 
   function todayISO() {
@@ -683,154 +660,155 @@
     return new Date(parts[0], parts[1] - 1, parts[2]);
   }
 
-  function addMonthsISO(isoDate, months) {
-    var d = parseISODate(isoDate);
-    d.setMonth(d.getMonth() + months);
-    return d;
-  }
-
   function formatThaiDate(d) {
     // Thai month names, but Gregorian (ค.ศ.) year — not Buddhist Era
     return d.toLocaleDateString("th-TH-u-ca-gregory", { day: "numeric", month: "short", year: "numeric" });
   }
 
+  function findStep(km) {
+    for (var i = 0; i < SCHEDULE.length; i++) {
+      if (SCHEDULE[i].km === Number(km)) return SCHEDULE[i];
+    }
+    return null;
+  }
+
+  function populateForm(km) {
+    var records = getRecords();
+    var rec = records[String(km)];
+    var step = findStep(km);
+    var dateInput = document.getElementById("lastDoneDateInput");
+    var odoInput = document.getElementById("lastDoneOdometerInput");
+    dateInput.value = rec && rec.date ? rec.date : "";
+    odoInput.value = rec && rec.odo !== null && rec.odo !== undefined ? String(rec.odo) : "";
+    var formHint = document.getElementById("formHint");
+    if (!step) { formHint.textContent = ""; return; }
+    if (rec) {
+      var pieces = ["เช็คแล้ว"];
+      if (rec.date) pieces.push(formatThaiDate(parseISODate(rec.date)));
+      var extra = rec.date ? " (" + formatThaiDate(parseISODate(rec.date)) + ")" : "";
+      var odoText = (rec.odo !== null && rec.odo !== undefined) ? " · ไมล์ " + fmt(rec.odo) + " กม." : " · ยังไม่มีเลขไมล์";
+      formHint.textContent = "รอบ " + fmt(step.km) + " กม. มีข้อมูลอยู่แล้ว — เช็คแล้ว" + extra + odoText + " — แก้ไขแล้วกดบันทึกเพื่ออัปเดต";
+    } else {
+      formHint.textContent = "รอบ " + fmt(step.km) + " กม. / " + step.mo + " เดือน ยังไม่มีข้อมูล — กรอกวันที่และเลขไมล์แล้วกดบันทึก";
+    }
+  }
+
+  function selectRound(km) {
+    var roundSelect = document.getElementById("roundSelect");
+    roundSelect.value = String(km);
+    populateForm(km);
+    var dateInput = document.getElementById("lastDoneDateInput");
+    if (dateInput.scrollIntoView) dateInput.scrollIntoView({ behavior: "smooth", block: "center" });
+    dateInput.focus();
+  }
+
   function render() {
-    var lastDoneKm = getLastDoneKm();
+    var records = getRecords();
+
     var doneIndex = -1;
-    if (lastDoneKm !== null) {
-      for (var i = 0; i < SCHEDULE.length; i++) {
-        if (SCHEDULE[i].km <= lastDoneKm) doneIndex = i;
-      }
+    for (var i = 0; i < SCHEDULE.length; i++) {
+      if (records[String(SCHEDULE[i].km)]) doneIndex = i;
     }
     var nextIndex = doneIndex + 1;
     if (nextIndex >= SCHEDULE.length) nextIndex = SCHEDULE.length - 1;
-
-    // date recorded for the most recently completed round (markDone always stamps it)
-    var lastDoneDate = getLastDoneDate();
-    var lastOdometer = getLastOdometer();
+    var nextStep = SCHEDULE[nextIndex];
+    var lastRecord = doneIndex >= 0 ? records[String(SCHEDULE[doneIndex].km)] : null;
 
     // status rows
     var statusRows = document.getElementById("statusRows");
     statusRows.innerHTML = "";
     if (doneIndex >= 0) {
       var doneStep = SCHEDULE[doneIndex];
-      var doneDateText = lastDoneDate ? " (" + formatThaiDate(parseISODate(lastDoneDate)) + ")" : "";
-      var doneOdoText = lastOdometer ? " · ไมล์ " + fmt(lastOdometer) + " กม." : "";
+      var doneDateText = lastRecord && lastRecord.date ? " (" + formatThaiDate(parseISODate(lastRecord.date)) + ")" : "";
+      var doneOdoText = lastRecord && lastRecord.odo !== null && lastRecord.odo !== undefined ? " · ไมล์ " + fmt(lastRecord.odo) + " กม." : "";
       var r1 = document.createElement("div");
       r1.className = "status-row";
       r1.innerHTML = '<span class="label">รอบล่าสุด</span><span class="badge-done">✓ ' + fmt(doneStep.km) + ' กม. / ' + doneStep.mo + ' เดือน — เช็คแล้ว' + doneDateText + doneOdoText + '</span>';
       statusRows.appendChild(r1);
     }
-    var nextStep = SCHEDULE[nextIndex];
     var r2 = document.createElement("div");
     r2.className = "status-row";
     r2.innerHTML = '<span class="label">รอบถัดไป</span><button type="button" class="badge-next" data-km="' + nextStep.km + '">' + fmt(nextStep.km) + ' กม. / ' + nextStep.mo + ' เดือน</button>';
     statusRows.appendChild(r2);
 
-    // the date/odometer fields normally record the check-in for the CURRENT pending round (nextStep).
-    // EXCEPTION: if a round is already marked done but has no odometer on record yet (e.g. it was
-    // marked done before this odometer feature existed), point the form at that already-done round
-    // instead — so the first mileage entry backfills its real reading rather than accidentally
-    // advancing to the next round.
-    var isBackfill = (doneIndex >= 0 && !lastOdometer);
-    var formStep = isBackfill ? SCHEDULE[doneIndex] : nextStep;
-
-    var dateInput = document.getElementById("lastDoneDateInput");
-    dateInput.value = isBackfill && lastDoneDate ? lastDoneDate : "";
-    dateInput.dataset.forKm = formStep.km;
-    dateInput.dataset.backfill = isBackfill ? "1" : "";
-    var odoInput = document.getElementById("lastDoneOdometerInput");
-    odoInput.value = "";
-    odoInput.dataset.forKm = formStep.km;
-
-    document.getElementById("forRoundHint").textContent = isBackfill
-      ? "กรอกเลขไมล์จริงของรอบ " + fmt(formStep.km) + " กม. / " + formStep.mo + " เดือน (รอบที่เช็คไปแล้ว) เพื่อใช้เป็นฐานคำนวณรอบถัดไป — ไม่กระทบรอบที่เช็คแล้ว"
-      : "จะบันทึกให้รอบ " + fmt(formStep.km) + " กม. / " + formStep.mo + " เดือน (รอบที่กำลังรออยู่) — กรอกทั้งวันที่และเลขไมล์ที่เข้าเช็คจริง";
-
+    // due-out: only the calculated next check-in mileage, based on the last recorded odometer + fixed step
     var dueOut = document.getElementById("dueOut");
-    if (lastOdometer) {
-      var nextDueOdo = lastOdometer + STEP_KM;
+    if (lastRecord && lastRecord.odo !== null && lastRecord.odo !== undefined) {
+      var nextDueOdo = lastRecord.odo + STEP_KM;
       dueOut.className = "due-out";
       dueOut.innerHTML = "กำหนดเข้าเช็คครั้งถัดไป: <strong>ไมล์ประมาณ " + fmt(nextDueOdo) + " กม.</strong>";
+    } else if (doneIndex >= 0) {
+      dueOut.className = "due-out empty";
+      dueOut.textContent = "กรอกเลขไมล์ของรอบ " + fmt(SCHEDULE[doneIndex].km) + " กม. เพื่อคำนวณไมล์ครบกำหนดรอบถัดไป";
     } else {
       dueOut.className = "due-out empty";
-      dueOut.textContent = "กรอกเลขไมล์ที่เข้าเช็ครอบนี้ เพื่อคำนวณเลขไมล์ครบกำหนดรอบถัดไป";
+      dueOut.textContent = "ยังไม่มีข้อมูลการเช็ค — เลือกระยะ กรอกวันที่และเลขไมล์ด้านล่างเพื่อเริ่มบันทึก";
     }
 
-    // status note
-    var noteTags = nextStep.parts.map(function(p){ return p.name; }).join(" + ") + " + ตรวจสอบความปลอดภัยตามคู่มือ";
+    // round select — rebuild options, keep current selection if still valid, otherwise default to the next pending round
+    var roundSelect = document.getElementById("roundSelect");
+    var prevSelected = roundSelect.value;
+    roundSelect.innerHTML = SCHEDULE.map(function (s) {
+      var mark = records[String(s.km)] ? " ✓" : "";
+      return '<option value="' + s.km + '">' + fmt(s.km) + ' กม. / ' + s.mo + ' เดือน' + mark + '</option>';
+    }).join("");
+    var validPrev = prevSelected && SCHEDULE.some(function (s) { return String(s.km) === prevSelected; });
+    roundSelect.value = validPrev ? prevSelected : String(nextStep.km);
+    populateForm(roundSelect.value);
+
+    // status note — always describes the next pending round's checklist
+    var noteTags = nextStep.parts.map(function (p) { return p.name; }).join(" + ") + " + ตรวจสอบความปลอดภัยตามคู่มือ";
     document.getElementById("statusNote").innerHTML =
       '<span><strong>เช็คถัดไป:</strong> ' + noteTags + '</span><span class="cost">รวม ' + fmt(nextStep.total) + ' บาท</span>';
 
     // table
     var tbody = document.getElementById("tbody");
     tbody.innerHTML = "";
-    SCHEDULE.forEach(function(step, i) {
+    SCHEDULE.forEach(function (step, i) {
+      var rec = records[String(step.km)];
       var tr = document.createElement("tr");
       var classes = [];
-      if (i <= doneIndex) classes.push("row-done");
+      if (rec) classes.push("row-done");
       if (i === nextIndex) classes.push("current");
       tr.className = classes.join(" ");
       tr.dataset.km = step.km;
 
       var tagsHtml;
-      if (i <= doneIndex) {
+      if (rec) {
         tagsHtml = '<span class="tag done">✓ เช็คแล้ว</span>';
       } else {
-        tagsHtml = step.parts.map(function(p) {
+        tagsHtml = step.parts.map(function (p) {
           return '<span class="tag' + (p.filter ? ' filter' : '') + '">' + p.name + ' · ' + fmt(p.cost) + '</span>';
         }).join("");
       }
 
-      var dateHtml;
-      if (i === doneIndex && lastDoneDate) {
-        dateHtml = '<span class="date-cell done">✓ ' + formatThaiDate(parseISODate(lastDoneDate)) + '</span>';
-      } else if (i < doneIndex || !lastDoneDate) {
-        dateHtml = '<span class="date-cell muted">—</span>';
+      var cellHtml;
+      if (rec) {
+        var dateLine = rec.date ? '<span class="date-cell done">✓ ' + formatThaiDate(parseISODate(rec.date)) + '</span>' : '<span class="date-cell done">✓ เช็คแล้ว</span>';
+        var odoLine = (rec.odo !== null && rec.odo !== undefined) ? '<div class="date-cell-sub">ไมล์ ' + fmt(rec.odo) + ' กม.</div>' : '<div class="date-cell-sub">ยังไม่มีเลขไมล์</div>';
+        cellHtml = dateLine + odoLine;
       } else {
-        var projected = addMonthsISO(lastDoneDate, 12 * (i - doneIndex));
-        dateHtml = i === nextIndex
-          ? '<span class="date-cell due">ครบกำหนด ' + formatThaiDate(projected) + '</span>'
-          : '<span class="date-cell est">~' + formatThaiDate(projected) + '</span>';
-      }
-
-      var odoHtml;
-      if (i === doneIndex && lastOdometer) {
-        odoHtml = '<div class="date-cell-sub">ไมล์ ' + fmt(lastOdometer) + ' กม.</div>';
-      } else if (i < doneIndex || !lastOdometer) {
-        odoHtml = '';
-      } else {
-        var projectedOdo = lastOdometer + STEP_KM * (i - doneIndex);
-        odoHtml = i === nextIndex
-          ? '<div class="date-cell-sub due">ครบกำหนดไมล์ ~' + fmt(projectedOdo) + ' กม.</div>'
-          : '<div class="date-cell-sub">~ไมล์ ' + fmt(projectedOdo) + ' กม.</div>';
+        cellHtml = '<span class="date-cell muted">—</span>';
       }
 
       tr.innerHTML =
         '<td><div class="interval"><span class="km">' + fmt(step.km) + '</span><span class="mo">' + step.mo + ' เดือน</span></div></td>' +
-        '<td>' + dateHtml + odoHtml + '</td>' +
+        '<td>' + cellHtml + '</td>' +
         '<td><div class="tags">' + tagsHtml + '</div></td>' +
         '<td class="num">' + step.labor + '</td>' +
         '<td class="num">' + fmt(step.partCost) + '</td>' +
         '<td class="num total">' + fmt(step.total) + '</td>';
 
-      tr.addEventListener("click", function () { markDone(step.km); });
+      tr.addEventListener("click", function () { selectRound(step.km); });
       tbody.appendChild(tr);
     });
   }
 
-  function markDone(km, isoDate, odometer) {
-    setLastDoneKm(km);
-    setLastDoneDate(isoDate || todayISO());
-    if (odometer !== undefined && odometer !== null && !isNaN(odometer)) {
-      setLastOdometer(odometer);
-    }
-    render();
-  }
-
-  function saveDate() {
+  function saveRecordFromForm() {
+    var roundSelect = document.getElementById("roundSelect");
     var dateInput = document.getElementById("lastDoneDateInput");
     var odoInput = document.getElementById("lastDoneOdometerInput");
+
     if (!dateInput.value) {
       dateInput.focus();
       dateInput.reportValidity && dateInput.reportValidity();
@@ -841,32 +819,44 @@
       odoInput.reportValidity && odoInput.reportValidity();
       return;
     }
-    if (dateInput.dataset.backfill === "1") {
-      // backfill: record the real odometer (and date) for the round already marked done —
-      // does NOT advance to the next round.
-      setLastDoneDate(dateInput.value);
-      setLastOdometer(parseInt(odoInput.value, 10));
-      render();
-      return;
+
+    var km = parseInt(roundSelect.value, 10);
+    var records = getRecords();
+    records[String(km)] = { date: dateInput.value, odo: parseInt(odoInput.value, 10) };
+    setRecords(records);
+    render();
+
+    // convenience: after saving, jump the form to the next round that still has no record
+    var updated = getRecords();
+    var nextUnrecorded = null;
+    for (var i = 0; i < SCHEDULE.length; i++) {
+      if (!updated[String(SCHEDULE[i].km)]) { nextUnrecorded = SCHEDULE[i]; break; }
     }
-    var km = parseInt(dateInput.dataset.forKm, 10);
-    markDone(km, dateInput.value, parseInt(odoInput.value, 10));
+    if (nextUnrecorded) {
+      document.getElementById("roundSelect").value = String(nextUnrecorded.km);
+      populateForm(nextUnrecorded.km);
+    }
   }
 
   document.addEventListener("click", function (e) {
     var btn = e.target.closest(".badge-next");
-    if (btn) { markDone(parseInt(btn.dataset.km, 10)); return; }
-    if (e.target.id === "resetBtn") { clearLastDoneKm(); render(); return; }
-    if (e.target.id === "saveDateBtn") { saveDate(); return; }
+    if (btn) { selectRound(parseInt(btn.dataset.km, 10)); return; }
+    if (e.target.id === "resetBtn") { clearRecords(); render(); return; }
+    if (e.target.id === "saveDateBtn") { saveRecordFromForm(); return; }
+  });
+
+  document.addEventListener("change", function (e) {
+    if (e.target.id === "roundSelect") { populateForm(e.target.value); }
   });
 
   document.addEventListener("keydown", function (e) {
     if ((e.target.id === "lastDoneDateInput" || e.target.id === "lastDoneOdometerInput") && e.key === "Enter") {
       e.preventDefault();
-      saveDate();
+      saveRecordFromForm();
     }
   });
 
+  migrateLegacyDataIfNeeded();
   render();
 </script>
 
