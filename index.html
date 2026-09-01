@@ -435,6 +435,8 @@
     margin-top: 2px;
   }
 
+  .date-cell-sub.due { color: var(--accent); font-weight: 600; }
+
   .tags {
     display: flex;
     flex-wrap: wrap;
@@ -660,6 +662,12 @@
     return new Date(parts[0], parts[1] - 1, parts[2]);
   }
 
+  function addMonthsISO(isoDate, months) {
+    var d = parseISODate(isoDate);
+    d.setMonth(d.getMonth() + months);
+    return d;
+  }
+
   function formatThaiDate(d) {
     // Thai month names, but Gregorian (ค.ศ.) year — not Buddhist Era
     return d.toLocaleDateString("th-TH-u-ca-gregory", { day: "numeric", month: "short", year: "numeric" });
@@ -787,6 +795,19 @@
         var dateLine = rec.date ? '<span class="date-cell done">✓ ' + formatThaiDate(parseISODate(rec.date)) + '</span>' : '<span class="date-cell done">✓ เช็คแล้ว</span>';
         var odoLine = (rec.odo !== null && rec.odo !== undefined) ? '<div class="date-cell-sub">ไมล์ ' + fmt(rec.odo) + ' กม.</div>' : '<div class="date-cell-sub">ยังไม่มีเลขไมล์</div>';
         cellHtml = dateLine + odoLine;
+      } else if (i === nextIndex && lastRecord) {
+        // no record yet for the upcoming round — project its due date/mileage from the last recorded round
+        var stepsAhead = nextIndex - doneIndex;
+        var projLines = [];
+        if (lastRecord.date) {
+          var projectedDate = addMonthsISO(lastRecord.date, 12 * stepsAhead);
+          projLines.push('<div class="date-cell-sub due">ครบกำหนด ~' + formatThaiDate(projectedDate) + '</div>');
+        }
+        if (lastRecord.odo !== null && lastRecord.odo !== undefined) {
+          var projectedOdo = lastRecord.odo + STEP_KM * stepsAhead;
+          projLines.push('<div class="date-cell-sub due">~ไมล์ ' + fmt(projectedOdo) + ' กม.</div>');
+        }
+        cellHtml = projLines.length ? projLines.join("") : '<span class="date-cell muted">—</span>';
       } else {
         cellHtml = '<span class="date-cell muted">—</span>';
       }
