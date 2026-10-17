@@ -577,12 +577,68 @@
   .row-delete-btn { color: var(--danger); }
   .row-delete-btn:hover { filter: brightness(1.15); }
 
+  /* ---------- login gate ---------- */
+  body.locked .page { display: none; }
+  .login-gate {
+    display: none;
+    min-height: 100vh;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+  }
+  body.locked .login-gate { display: flex; }
+  .login-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    box-shadow: var(--shadow);
+    padding: 28px 24px;
+    max-width: 360px;
+    width: 100%;
+    text-align: center;
+  }
+  .login-card h2 { margin: 0 0 6px; font-size: 20px; color: var(--ink); }
+  .login-card p { margin: 0 0 18px; font-size: 14px; color: var(--ink-soft); }
+  .login-btn {
+    font: inherit;
+    font-weight: 600;
+    background: var(--brand);
+    color: #fff;
+    border: 0;
+    border-radius: 10px;
+    padding: 11px 18px;
+    cursor: pointer;
+    width: 100%;
+  }
+  .login-btn:hover { filter: brightness(1.1); }
+  .login-msg { margin-top: 14px; font-size: 13px; color: var(--danger); min-height: 1em; }
+  .logout-link {
+    font: inherit;
+    font-size: 12px;
+    background: none;
+    border: 0;
+    color: var(--ink-faint);
+    text-decoration: underline;
+    cursor: pointer;
+    padding: 0;
+    margin-left: 10px;
+  }
+
   @media (max-width: 560px) {
     .status-note .cost { margin-left: 0; }
   }
 </style>
 </head>
-<body>
+<body class="locked">
+
+<div class="login-gate">
+  <div class="login-card">
+    <h2>NEVO Q05 Ultra</h2>
+    <p>ลงชื่อเข้าใช้ด้วย Google เพื่อดูและแก้ไขบันทึกการบำรุงรักษา</p>
+    <button type="button" class="login-btn" id="loginBtn">เข้าสู่ระบบด้วย Google</button>
+    <div class="login-msg" id="loginMsg"></div>
+  </div>
+</div>
 
 <div class="page">
 
@@ -590,7 +646,7 @@
     <span class="eyebrow">Changan · NEVO Q05 Ultra</span>
     <h1>ตารางบำรุงรักษาตามระยะทาง</h1>
     <p class="sub">อ้างอิงจากตารางบำรุงรักษาอย่างเป็นทางการ — ราคา ณ วันที่ 19 สิงหาคม 2026 (รวม VAT 7%)</p>
-    <a class="app-link" href="https://xxgui2enxx.github.io/ev-calc/">⚡ คำนวณค่าชาร์จ EV</a>
+    <a class="app-link" href="https://xxgui2enxx.github.io/ev-calc/">⚡ คำนวณค่าชาร์จ EV</a><button type="button" class="logout-link" id="logoutBtn">ออกจากระบบ</button>
   </div>
 
   <div class="status">
@@ -646,6 +702,7 @@
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
 <script>
   var SCHEDULE = [
@@ -953,15 +1010,60 @@
   document.getElementById("dueOut").className = "due-out empty";
   document.getElementById("dueOut").textContent = "กำลังเชื่อมต่อฐานข้อมูล...";
 
-  stateDocRef.onSnapshot(function (snap) {
-    var data = snap.data();
-    cachedRecords = (data && data.records) ? data.records : {};
-    firebaseReady = true;
-    render();
-  }, function (err) {
-    console.error("เชื่อมต่อ Firestore ไม่สำเร็จ:", err);
-    document.getElementById("dueOut").className = "due-out empty";
-    document.getElementById("dueOut").textContent = "เชื่อมต่อฐานข้อมูลไม่สำเร็จ — ตรวจสอบอินเทอร์เน็ตแล้วลองรีเฟรชหน้านี้ (" + err.message + ")";
+  // ---------- Login gate (Firebase Auth, Google) ----------
+  // This only hides the UI. Real protection is the Firestore Security Rules,
+  // which allow access only to the owner's verified Google account.
+  var auth = firebase.auth();
+  var unsubscribeSnapshot = null;
+  var loginMsg = document.getElementById("loginMsg");
+
+  function showLogin(msg) {
+    if (unsubscribeSnapshot) { unsubscribeSnapshot(); unsubscribeSnapshot = null; }
+    cachedRecords = {};
+    document.body.classList.add("locked");
+    loginMsg.textContent = msg || "";
+  }
+
+  function startSync() {
+    unsubscribeSnapshot = stateDocRef.onSnapshot(function (snap) {
+      var data = snap.data();
+      cachedRecords = (data && data.records) ? data.records : {};
+      firebaseReady = true;
+      render();
+    }, function (err) {
+      console.error("เชื่อมต่อ Firestore ไม่สำเร็จ:", err);
+      if (err.code === "permission-denied") {
+        auth.signOut().then(function () {
+          showLogin("บัญชีนี้ไม่มีสิทธิ์เข้าใช้งาน — กรุณาเข้าสู่ระบบด้วยบัญชีเจ้าของ");
+        });
+        return;
+      }
+      document.getElementById("dueOut").className = "due-out empty";
+      document.getElementById("dueOut").textContent = "เชื่อมต่อฐานข้อมูลไม่สำเร็จ — ตรวจสอบอินเทอร์เน็ตแล้วลองรีเฟรชหน้านี้ (" + err.message + ")";
+    });
+  }
+
+  auth.onAuthStateChanged(function (user) {
+    if (user) {
+      document.body.classList.remove("locked");
+      if (!unsubscribeSnapshot) startSync();
+    } else {
+      showLogin(loginMsg.textContent);
+    }
+  });
+
+  document.getElementById("loginBtn").addEventListener("click", function () {
+    loginMsg.textContent = "";
+    auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(function (err) {
+      console.error("เข้าสู่ระบบไม่สำเร็จ:", err);
+      if (err.code !== "auth/popup-closed-by-user" && err.code !== "auth/cancelled-popup-request") {
+        loginMsg.textContent = "เข้าสู่ระบบไม่สำเร็จ (" + err.code + ")";
+      }
+    });
+  });
+
+  document.getElementById("logoutBtn").addEventListener("click", function () {
+    auth.signOut();
   });
 </script>
 
