@@ -746,6 +746,11 @@
 
   // writes the full records object to Firestore; every connected device gets it via onSnapshot
   function setRecords(records) {
+    // never write before the first snapshot has loaded, or we'd overwrite existing data with a partial set
+    if (!firebaseReady) {
+      alert("ข้อมูลยังโหลดไม่เสร็จ — รอสักครู่แล้วลองใหม่อีกครั้ง");
+      return false;
+    }
     cachedRecords = records;
     stateDocRef.set({
       records: records,
@@ -754,10 +759,11 @@
       console.error("บันทึกไป Firestore ไม่สำเร็จ:", err);
       alert("บันทึกข้อมูลไม่สำเร็จ — ตรวจสอบการเชื่อมต่ออินเทอร์เน็ตแล้วลองใหม่อีกครั้ง\n(" + err.message + ")");
     });
+    return true;
   }
 
   function clearRecords() {
-    setRecords({});
+    return setRecords({});
   }
 
   function todayISO() {
@@ -991,7 +997,11 @@
   document.addEventListener("click", function (e) {
     var btn = e.target.closest(".badge-next");
     if (btn) { selectRound(parseInt(btn.dataset.km, 10)); return; }
-    if (e.target.id === "resetBtn") { clearRecords(); render(); return; }
+    if (e.target.id === "resetBtn") {
+      if (!confirm("ล้างข้อมูลการเช็คทุกรอบทั้งหมด ใช่หรือไม่?\nการลบนี้ไม่สามารถกู้คืนได้")) return;
+      if (clearRecords()) render();
+      return;
+    }
     if (e.target.id === "saveDateBtn") { saveRecordFromForm(); return; }
   });
 
@@ -1020,6 +1030,7 @@
   function showLogin(msg) {
     if (unsubscribeSnapshot) { unsubscribeSnapshot(); unsubscribeSnapshot = null; }
     cachedRecords = {};
+    firebaseReady = false;
     document.body.classList.add("locked");
     loginMsg.textContent = msg || "";
   }
